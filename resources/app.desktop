@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Ghostwriter
+Comment=Local speech-to-text dictation for the COSMIC desktop
+Type=Application
+Icon=com.github.hmrdsmoke.GhostWriter
+Exec=ghostwriter %F
+Terminal=false
+StartupNotify=true
+Categories=COSMIC
+Keywords=COSMIC
+NoDisplay=true
+X-CosmicApplet=true
+X-CosmicHoverPopup=Auto
+MimeType=

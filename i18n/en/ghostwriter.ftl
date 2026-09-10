@@ -1,0 +1,9 @@
+app-title = Ghostwriter
+app-comment = Local speech-to-text dictation for the COSMIC desktop
+app-keywords =
+about = About
+view = View
+welcome = Welcome to COSMIC! ✨
+page-id = Page { $num }
+git-description = Git commit {$hash} on {$date}
+example-row = Example Row
