@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 
 mod app;
+mod audio;
 mod config;
 mod i18n;
+mod transcribe;
 
 fn main() -> cosmic::iced::Result {
     // Get the system's preferred languages.
