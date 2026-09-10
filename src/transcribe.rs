@@ -66,6 +66,8 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
     params.set_print_realtime(false);
     params.set_print_timestamps(false);
     params.set_suppress_blank(true);
+    // Drop non-speech tokens like [BLANK_AUDIO] and [MUSIC].
+    params.set_suppress_nst(true);
 
     let started = std::time::Instant::now();
     state
@@ -77,6 +79,10 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
         let piece = segment
             .to_str_lossy()
             .map_err(|e| format!("bad segment text: {e}"))?;
+        // Belt and braces: a marker that gets past suppress_nst is never dictation.
+        if is_marker(piece.trim()) {
+            continue;
+        }
         text.push_str(&piece);
     }
 
@@ -87,6 +93,14 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
     );
 
     Ok(text.trim().to_string())
+}
+
+/// `[BLANK_AUDIO]`, `(silence)`, `*music*` — Whisper's ways of saying "nothing said".
+fn is_marker(segment: &str) -> bool {
+    let wrapped = |open: char, close: char| {
+        segment.starts_with(open) && segment.ends_with(close) && segment.len() > 1
+    };
+    wrapped('[', ']') || wrapped('(', ')') || wrapped('*', '*')
 }
 
 fn threads() -> i32 {

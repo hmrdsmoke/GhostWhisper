@@ -2,13 +2,20 @@
 
 use crate::audio::{Recorder, WHISPER_RATE};
 use crate::config::Config;
-use crate::transcribe;
+use crate::{dbus, transcribe, typer};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
 use cosmic::iced::Subscription;
 use cosmic::prelude::*;
+use std::time::Duration;
 
-/// Panel state. First click starts listening, second click stops and
-/// transcribes. For now the text goes to stdout; uinput comes next.
+/// Pause before the first keystroke so the hotkey's modifiers have come up;
+/// otherwise Super is still held and the letters fire as shortcuts.
+const HOTKEY_GRACE: Duration = Duration::from_millis(300);
+
+/// Panel state. One toggle starts listening, the next stops and transcribes.
+/// Toggled by hotkey, the text is typed into the focused window; toggled by
+/// clicking the panel, it only goes to stdout, because the click has moved
+/// focus to the panel.
 #[derive(Default)]
 pub struct AppModel {
     /// Application state which is managed by the COSMIC runtime.
@@ -17,14 +24,15 @@ pub struct AppModel {
     config: Config,
     /// Live microphone capture while listening.
     recorder: Option<Recorder>,
-    /// True while Whisper is running in the background.
+    /// True while Whisper (and the typer) run in the background.
     transcribing: bool,
 }
 
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
-    ToggleListening,
+    /// `typing` is true when the toggle came in over D-Bus from the hotkey.
+    ToggleListening { typing: bool },
     Transcribed(Result<String, String>),
     UpdateConfig(Config),
 }
@@ -63,6 +71,13 @@ impl cosmic::Application for AppModel {
             })
             .unwrap_or_default();
 
+        // Bring the virtual keyboard up now so the compositor knows it long
+        // before the first dictation. Without /dev/uinput access we still run;
+        // transcriptions just stay on stdout.
+        if let Err(e) = typer::init() {
+            eprintln!("ghostwriter: {e}; typing disabled, text will go to stdout only");
+        }
+
         let app = AppModel {
             core,
             config,
@@ -85,15 +100,18 @@ impl cosmic::Application for AppModel {
         self.core
             .applet
             .icon_button(icon)
-            .on_press(Message::ToggleListening)
+            .on_press(Message::ToggleListening { typing: false })
             .into()
     }
 
-    /// Watch for application configuration changes.
+    /// Config changes plus the D-Bus endpoint the hotkey talks to.
     fn subscription(&self) -> Subscription<Self::Message> {
-        self.core()
-            .watch_config::<Config>(Self::APP_ID)
-            .map(|update| Message::UpdateConfig(update.config))
+        Subscription::batch(vec![
+            self.core()
+                .watch_config::<Config>(Self::APP_ID)
+                .map(|update| Message::UpdateConfig(update.config)),
+            dbus::subscription(),
+        ])
     }
 
     /// Handles messages emitted by the application and its widgets.
@@ -101,31 +119,42 @@ impl cosmic::Application for AppModel {
         match message {
             Message::UpdateConfig(config) => self.config = config,
 
-            Message::ToggleListening => {
+            Message::ToggleListening { typing } => {
                 if let Some(recorder) = self.recorder.take() {
-                    // Second press: stop capturing and transcribe off the UI thread.
+                    // Second toggle: stop capturing, then transcribe and type off the UI thread.
                     match recorder.stop() {
                         Ok(audio) => {
                             self.transcribing = true;
                             let model = transcribe::models_dir().join(&self.config.model);
                             let language = self.config.language.clone();
                             eprintln!(
-                                "ghostwriter: captured {:.1}s, transcribing",
-                                audio.len() as f32 / WHISPER_RATE as f32
+                                "ghostwriter: captured {:.1}s, transcribing{}",
+                                audio.len() as f32 / WHISPER_RATE as f32,
+                                if typing { " and typing" } else { "" }
                             );
                             return cosmic::task::future(async move {
-                                let result = tokio::task::spawn_blocking(move || {
-                                    transcribe::transcribe(&model, &language, &audio)
-                                })
+                                let result = tokio::task::spawn_blocking(
+                                    move || -> Result<String, String> {
+                                        let text =
+                                            transcribe::transcribe(&model, &language, &audio)?;
+                                        if typing && !text.is_empty() {
+                                            std::thread::sleep(HOTKEY_GRACE);
+                                            // Trailing space so back-to-back dictations
+                                            // don't run together.
+                                            typer::type_text(&format!("{text} "))?;
+                                        }
+                                        Ok(text)
+                                    },
+                                )
                                 .await
-                                .unwrap_or_else(|e| Err(format!("transcription task panicked: {e}")));
+                                .unwrap_or_else(|e| Err(format!("dictation task panicked: {e}")));
                                 Message::Transcribed(result)
                             });
                         }
                         Err(e) => eprintln!("ghostwriter: {e}"),
                     }
                 } else {
-                    // First press: start listening.
+                    // First toggle: start listening.
                     match Recorder::start() {
                         Ok(recorder) => {
                             self.recorder = Some(recorder);

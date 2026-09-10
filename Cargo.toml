@@ -20,6 +20,10 @@ whisper-rs = "0.16"
 # GPU builds — replace the line above with ONE of these:
 #   whisper-rs = { version = "0.16", features = ["cuda"] }    # NVIDIA, needs the CUDA toolkit (nvcc)
 #   whisper-rs = { version = "0.16", features = ["vulkan"] }  # any GPU, needs libvulkan-dev + glslc
+# Virtual keyboard on /dev/uinput — how the text reaches the focused window.
+evdev = "0.13"
+# Session-bus endpoint so a hotkey (`ghostwriter --toggle`) can reach the running applet.
+zbus = { version = "5", default-features = false, features = ["tokio"] }
 
 [dependencies.i18n-embed]
 version = "0.16"
