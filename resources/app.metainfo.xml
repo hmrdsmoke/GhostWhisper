@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.github.hmrdsmoke.GhostWriter</id>
+  <id>io.github.hmrdsmoke.GhostWriter</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
   <name>Ghostwriter</name>
@@ -9,7 +9,7 @@
     https://github.com/hmrdsmoke/GhostWriter/raw/main/resources/icons/hicolor/scalable/apps/icon.svg
   </icon>
   <url type="vcs-browser">https://github.com/hmrdsmoke/GhostWriter</url>
-  <launchable type="desktop-id">com.github.hmrdsmoke.GhostWriter.desktop</launchable>
+  <launchable type="desktop-id">io.github.hmrdsmoke.GhostWriter.desktop</launchable>
   <provides>
     <id>com.system76.CosmicApplet</id>
     <binaries>

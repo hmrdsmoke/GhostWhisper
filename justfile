@@ -1,5 +1,5 @@
 name := 'ghostwriter'
-appid := 'com.github.hmrdsmoke.GhostWriter'
+appid := 'io.github.hmrdsmoke.GhostWriter'
 
 rootdir := ''
 prefix := '/usr'

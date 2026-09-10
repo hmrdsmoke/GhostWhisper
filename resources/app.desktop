@@ -2,7 +2,7 @@
 Name=Ghostwriter
 Comment=Local speech-to-text dictation for the COSMIC desktop
 Type=Application
-Icon=com.github.hmrdsmoke.GhostWriter
+Icon=io.github.hmrdsmoke.GhostWriter
 Exec=ghostwriter %F
 Terminal=false
 StartupNotify=true
