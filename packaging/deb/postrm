@@ -1,0 +1,10 @@
+#!/bin/sh
+# GhostWriter post-remove. The uinput group is left alone on purpose; other
+# tools (ydotool, keyd) use the same convention and may still need it.
+set -e
+
+if [ "$1" = "purge" ]; then
+    rm -f /etc/modules-load.d/ghostwriter-uinput.conf
+fi
+
+exit 0

@@ -24,8 +24,10 @@ A keyboard shortcut talks to the running applet over D-Bus
 (`ghostwriter --toggle`). That matters: a shortcut doesn't move keyboard
 focus, so the text lands where your cursor already is.
 
-On first run the applet downloads its model by itself and tells you when
-it's ready. Nothing to fetch by hand.
+The first time it runs it asks — via a notification and the panel popup —
+before downloading its model, then fetches it in the background and tells
+you when it's ready. Nothing to fetch by hand, and nothing downloaded
+without your say-so.
 
 ## Requirements
 
@@ -57,7 +59,7 @@ Cargo feature, so other builds are a flag, not an edit:
 | CPU only | `cargo build --release --no-default-features` | nothing | `base.en` |
 
 GPU builds default to the large model; the CPU build defaults to the small
-English one so it stays quick. Either way the applet fetches it for you.
+English one so it stays quick. Either way the applet offers to fetch it.
 
 ## One-time setup
 
@@ -78,15 +80,16 @@ Then **log out and back in** so the panel session picks up the group.
 exist at all, the module isn't loaded: `sudo modprobe uinput` and
 `echo uinput | sudo tee /etc/modules-load.d/uinput.conf`.
 
-Without this GhostWriter still runs and will tell you so; transcriptions
-only go to the log until it's done.
+Without this GhostWriter still runs and says so in the panel popup;
+transcriptions only go to the log until it's done.
 
-### 2. Panel and hotkey
+### 2. Panel, model and hotkey
 
 - Settings → Desktop → Panel → Configure panel applets → add **GhostWriter**.
-  It starts downloading the model the first time it runs; you'll get a
-  notification when it's ready (about 1.6 GB for the large model, 150 MB
-  for the small one).
+- Click the new icon. The popup shows which model the build wants and how
+  big it is (1.6 GB for the large one, 150 MB for the small one), with a
+  **Download** button. Press it; the popup shows progress and you get a
+  notification when it's ready.
 - Settings → Keyboard → Shortcuts → Custom Shortcuts → add one running
   `ghostwriter --toggle`, bound to whatever key you like.
 
@@ -97,13 +100,16 @@ record dot while listening, spinner while transcribing, download arrow while
 the model is being fetched. Each dictation is typed with a trailing space so
 the next one doesn't run into it.
 
+Clicking the icon opens the status popup: current state, model and download,
+whether typing is set up, the hotkey command to bind, and how long the last
+dictation took. Listening itself is only ever toggled by the hotkey —
+clicking the panel would move keyboard focus to the panel, and then there'd
+be nowhere sensible to type.
+
 If you dictate before the model has finished downloading, you get a
 notification with the progress and that clip is dropped, rather than being
-typed into some other window minutes later.
-
-Clicking the panel icon also starts and stops listening, but the result is
-only logged, never typed — clicking the panel moves keyboard focus to the
-panel, so there'd be nowhere sensible to type. Use the hotkey.
+typed into some other window minutes later. Clips with no speech in them
+(you pressed twice by accident) are dropped silently.
 
 Logs go to the session journal:
 
@@ -115,8 +121,8 @@ journalctl --user -f | grep ghostwriter
 
 GhostWriter uses cosmic-config: one file per setting under
 `~/.config/cosmic/io.github.hmrdsmoke.GhostWriter/v1/`, in RON, so string
-values keep their quotes. Changes apply live; changing the model triggers a
-download if the new one isn't on disk.
+values keep their quotes. Changes apply live; if you switch to a model that
+isn't on disk, the popup offers to download it.
 
 | File | Default | Meaning |
 |---|---|---|

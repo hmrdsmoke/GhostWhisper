@@ -48,6 +48,22 @@ pub fn progress() -> u8 {
     PROGRESS.load(Ordering::Relaxed)
 }
 
+/// Rough download size for the popup, so people know what they're saying
+/// yes to. Anything not listed still works; it just can't be sized up front.
+pub fn size_hint(name: &str) -> &'static str {
+    match name {
+        "ggml-large-v3-turbo.bin" => "1.6 GB",
+        "ggml-large-v3-turbo-q8_0.bin" => "870 MB",
+        "ggml-large-v3-turbo-q5_0.bin" => "570 MB",
+        "ggml-large-v3.bin" => "3.1 GB",
+        "ggml-medium.en.bin" | "ggml-medium.bin" => "1.5 GB",
+        "ggml-small.en.bin" | "ggml-small.bin" => "490 MB",
+        "ggml-base.en.bin" | "ggml-base.bin" => "150 MB",
+        "ggml-tiny.en.bin" | "ggml-tiny.bin" => "78 MB",
+        _ => "size unknown",
+    }
+}
+
 /// Makes sure `name` is on disk, downloading it if it isn't. Blocking.
 pub fn ensure(name: &str) -> Result<PathBuf, String> {
     let _guard = DOWNLOAD.lock().unwrap_or_else(|p| p.into_inner());

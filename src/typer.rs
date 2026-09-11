@@ -13,8 +13,12 @@ use std::sync::{Mutex, OnceLock};
 use std::thread::sleep;
 use std::time::Duration;
 
-/// Gap between keystrokes so nothing gets dropped or reordered downstream.
-const KEY_DELAY: Duration = Duration::from_millis(5);
+/// How long a key stays down. Real keystrokes are tens of milliseconds;
+/// a down and up microseconds apart is the easiest thing for the input
+/// stack to lose, and a lost release leaves a key held.
+const KEY_HOLD: Duration = Duration::from_millis(12);
+/// Gap between keystrokes.
+const KEY_GAP: Duration = Duration::from_millis(8);
 
 static KEYBOARD: OnceLock<Mutex<VirtualDevice>> = OnceLock::new();
 
@@ -81,11 +85,12 @@ fn press(device: &mut VirtualDevice, key: KeyCode, shift: bool) -> Result<(), St
         emit(device, KeyCode::KEY_LEFTSHIFT, 1)?;
     }
     emit(device, key, 1)?;
+    sleep(KEY_HOLD);
     emit(device, key, 0)?;
     if shift {
         emit(device, KeyCode::KEY_LEFTSHIFT, 0)?;
     }
-    sleep(KEY_DELAY);
+    sleep(KEY_GAP);
     Ok(())
 }
 

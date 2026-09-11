@@ -30,7 +30,7 @@ whisper-rs = "0.16"
 evdev = "0.13"
 # Session-bus endpoint so a hotkey (`ghostwriter --toggle`) can reach the running applet.
 zbus = { version = "5", default-features = false, features = ["tokio"] }
-# Fetching the model on first run.
+# Fetching the model when the user asks for it.
 ureq = "3"
 # Desktop notifications for download progress and problems.
 notify-rust = { version = "4", default-features = false, features = ["z-with-tokio"] }
@@ -64,3 +64,49 @@ features = [
 # libcosmic = { path = "../libcosmic" }
 # cosmic-config = { path = "../libcosmic/cosmic-config" }
 # cosmic-theme = { path = "../libcosmic/cosmic-theme" }
+
+# `cargo deb` reads this. Shared-library dependencies are detected from the
+# built binary; the maintainer scripts in packaging/deb/ set up /dev/uinput.
+[package.metadata.deb]
+maintainer = "HMRDSmoke Software LLC <hmrdsmoke@users.noreply.github.com>"
+copyright = "2026, HMRDSmoke Software LLC"
+license-file = ["LICENSE", "0"]
+section = "utils"
+priority = "optional"
+depends = "$auto"
+maintainer-scripts = "packaging/deb/"
+extended-description = """\
+Press a hotkey, talk, press it again: the words are typed into whatever \
+window has keyboard focus, through a virtual keyboard on /dev/uinput. \
+Speech recognition runs locally with Whisper (whisper.cpp); no audio leaves \
+the machine. This package is built for NVIDIA GPUs (CUDA)."""
+assets = [
+    ["target/release/ghostwriter", "usr/bin/", "755"],
+    ["target/xdgen/app.desktop", "usr/share/applications/io.github.hmrdsmoke.GhostWriter.desktop", "644"],
+    ["target/xdgen/app.metainfo.xml", "usr/share/metainfo/io.github.hmrdsmoke.GhostWriter.metainfo.xml", "644"],
+    ["resources/icon.svg", "usr/share/icons/hicolor/scalable/apps/io.github.hmrdsmoke.GhostWriter.svg", "644"],
+    ["resources/70-ghostwriter-uinput.rules", "usr/lib/udev/rules.d/", "644"],
+    ["README.md", "usr/share/doc/ghostwriter/README.md", "644"],
+]
+
+# `cargo deb --variant cpu` / `--variant vulkan` for machines without CUDA.
+[package.metadata.deb.variants.cpu]
+name = "ghostwriter-cpu"
+default-features = false
+conflicts = "ghostwriter, ghostwriter-vulkan"
+extended-description = """\
+Press a hotkey, talk, press it again: the words are typed into whatever \
+window has keyboard focus, through a virtual keyboard on /dev/uinput. \
+Speech recognition runs locally with Whisper (whisper.cpp); no audio leaves \
+the machine. This package runs Whisper on the CPU."""
+
+[package.metadata.deb.variants.vulkan]
+name = "ghostwriter-vulkan"
+default-features = false
+features = ["vulkan"]
+conflicts = "ghostwriter, ghostwriter-cpu"
+extended-description = """\
+Press a hotkey, talk, press it again: the words are typed into whatever \
+window has keyboard focus, through a virtual keyboard on /dev/uinput. \
+Speech recognition runs locally with Whisper (whisper.cpp); no audio leaves \
+the machine. This package runs Whisper on any GPU with Vulkan."""

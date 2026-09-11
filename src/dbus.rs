@@ -26,11 +26,7 @@ struct Server {
 impl Server {
     /// Start listening, or stop and type what was said.
     async fn toggle(&self) {
-        let _ = self
-            .tx
-            .clone()
-            .send(Message::ToggleListening { typing: true })
-            .await;
+        let _ = self.tx.clone().send(Message::ToggleListening).await;
     }
 }
 
