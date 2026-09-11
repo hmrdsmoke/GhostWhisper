@@ -2,7 +2,7 @@
 name = "ghostwriter"
 version = "0.1.0"
 edition = "2024"
-license = "GPL-3.0"
+license = "GPL-3.0-only"
 description = "Local speech-to-text dictation for the COSMIC desktop"
 repository = "https://github.com/hmrdsmoke/GhostWriter"
 
@@ -87,6 +87,7 @@ assets = [
     ["resources/icon.svg", "usr/share/icons/hicolor/scalable/apps/io.github.hmrdsmoke.GhostWriter.svg", "644"],
     ["resources/70-ghostwriter-uinput.rules", "usr/lib/udev/rules.d/", "644"],
     ["README.md", "usr/share/doc/ghostwriter/README.md", "644"],
+    ["licenses.html", "usr/share/doc/ghostwriter/licenses.html", "644"],
 ]
 
 # `cargo deb --variant cpu` / `--variant vulkan` for machines without CUDA.

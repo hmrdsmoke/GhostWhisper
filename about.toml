@@ -1,0 +1,125 @@
+# cargo-about configuration.
+#
+# Generates the third-party license page that ships in the .deb at
+# usr/share/doc/ghostwriter/licenses.html:
+#
+#     cargo about generate about.hbs -o licenses.html
+#
+# Regenerate after any `cargo update`. If it refuses because a crate uses a
+# license that isn't listed under `accepted`, add that license and rerun.
+
+# Linux only: keeps the Windows/macOS/wasm-only crates off the page.
+targets = ["x86_64-unknown-linux-gnu"]
+
+# Build and dev dependencies don't ship in the binary.
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+
+accepted = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Unlicense",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "GPL-3.0-only",
+]
+
+# ---------------------------------------------------------------------------
+# Clarifications: crates whose Cargo.toml has no `license` field, or whose
+# license file sits somewhere cargo-about doesn't look. `path` is relative to
+# the crate's own directory in the cargo cache; `checksum` is the file's sha256
+# (cargo-about refuses the file if it changes, so a `cargo update` that touches
+# these will tell you to re-check them).
+# ---------------------------------------------------------------------------
+
+# whisper-rs-sys is Unlicense, but it compiles whisper.cpp and ggml (MIT) into
+# the binary. Their copyright notice has to ship with it; this pulls it in.
+[whisper-rs-sys.clarify]
+license = "Unlicense AND MIT"
+
+[[whisper-rs-sys.clarify.files]]
+path = "whisper.cpp/LICENSE"
+license = "MIT"
+checksum = "e562a2ddfaf8280537795ac5ecd34e3012b6582a147ef69ba6a6a5c08c84757d"
+
+# libcosmic workspace: MPL-2.0, one LICENSE at the repo root that the member
+# crates don't carry themselves.
+[libcosmic.clarify]
+license = "MPL-2.0"
+
+[[libcosmic.clarify.files]]
+path = "LICENSE"
+checksum = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+
+[cosmic-config.clarify]
+license = "MPL-2.0"
+
+[[cosmic-config.clarify.files]]
+path = "../LICENSE"
+checksum = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+
+[cosmic-config-derive.clarify]
+license = "MPL-2.0"
+
+[[cosmic-config-derive.clarify.files]]
+path = "../LICENSE"
+checksum = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+
+[cosmic-theme.clarify]
+license = "MPL-2.0"
+
+[[cosmic-theme.clarify.files]]
+path = "../LICENSE"
+checksum = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+
+# cosmic-panel workspace: GPL-3.0-only, LICENSE.md at the repo root.
+[cosmic-panel-config.clarify]
+license = "GPL-3.0-only"
+
+[[cosmic-panel-config.clarify.files]]
+path = "../LICENSE.md"
+checksum = "6ea843d9f221a2a7cb757d65c86368b9f207584ed0f2653e4b215a7702a7e1c7"
+
+[xdg-shell-wrapper-config.clarify]
+license = "GPL-3.0-only"
+
+[[xdg-shell-wrapper-config.clarify.files]]
+path = "../LICENSE.md"
+checksum = "6ea843d9f221a2a7cb757d65c86368b9f207584ed0f2653e4b215a7702a7e1c7"
+
+# dbus-settings-bindings workspace: MPL-2.0, LICENSE.md at the repo root.
+[cosmic-settings-daemon.clarify]
+license = "MPL-2.0"
+
+[[cosmic-settings-daemon.clarify.files]]
+path = "../LICENSE.md"
+checksum = "e368885fd6ab4d78863ed9a0daac8a16b40a55c58395a9061f7c36b52a30536d"
+
+# pop-os/window_clipboard workspace: MIT, LICENSE at the repo root. Its `mime`
+# helper crate has the same gap, but the name collides with the crates.io
+# `mime 0.3` also in the tree (clarifications are per-name, not per-version),
+# so it stays unclarified — its notice is identical to window_clipboard's, which
+# is on the page.
+[dnd.clarify]
+license = "MIT"
+
+[[dnd.clarify.files]]
+path = "../LICENSE"
+checksum = "7faec985f3e9b1c4a1df646bfedc304ba67e409447f7ab7f4f591f68708d85dc"
+
+# iced (libcosmic's fork, vendored as a submodule): MIT, LICENSE at the iced root.
+[iced_accessibility.clarify]
+license = "MIT"
+
+[[iced_accessibility.clarify.files]]
+path = "../LICENSE"
+checksum = "fc9086ba4eba4b77e4c603906362742bc3715ffa2c7810c6074fe7780d3a0398"
