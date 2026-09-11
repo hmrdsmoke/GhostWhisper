@@ -5,6 +5,8 @@ mod audio;
 mod config;
 mod dbus;
 mod i18n;
+mod model;
+mod notify;
 mod transcribe;
 mod typer;
 

@@ -3,8 +3,9 @@
 //! Microphone capture.
 //!
 //! The cpal stream lives on its own thread for the whole recording. `stop()`
-//! tears it down and hands back the audio as 16 kHz mono f32, which is the
-//! only thing Whisper accepts.
+//! tears it down and hands back the audio as 16 kHz mono f32 with the
+//! silence trimmed, which is what Whisper wants — and silence is what makes
+//! Whisper invent things, so the less of it the better.
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, Sample, SizedSample};
@@ -57,7 +58,9 @@ impl Recorder {
         })
     }
 
-    /// Stops capture and returns the recording as 16 kHz mono samples.
+    /// Stops capture and returns the recording as 16 kHz mono samples with
+    /// leading, trailing and long internal silences trimmed. Empty if nobody
+    /// said anything.
     pub fn stop(self) -> Result<Vec<f32>, String> {
         let _ = self.stop.send(());
         self.done
@@ -113,12 +116,19 @@ impl Capture {
         })
     }
 
-    /// Drops the stream and converts what was captured to 16 kHz mono.
+    /// Drops the stream and converts what was captured to trimmed 16 kHz mono.
     fn finish(self) -> Vec<f32> {
         drop(self.stream);
         let raw = std::mem::take(&mut *self.buffer.lock().unwrap_or_else(|p| p.into_inner()));
         let mono = downmix(&raw, self.channels);
-        resample(&mono, self.rate, WHISPER_RATE)
+        let resampled = resample(&mono, self.rate, WHISPER_RATE);
+        let trimmed = trim_silence(&resampled);
+        eprintln!(
+            "ghostwriter: {:.1}s recorded, {:.1}s after trimming silence",
+            resampled.len() as f32 / WHISPER_RATE as f32,
+            trimmed.len() as f32 / WHISPER_RATE as f32
+        );
+        trimmed
     }
 }
 
@@ -174,4 +184,56 @@ fn resample(input: &[f32], from: u32, to: u32) -> Vec<f32> {
             a + (b - a) * frac
         })
         .collect()
+}
+
+/// Analysis window for the silence detector.
+const FRAME: usize = WHISPER_RATE as usize / 50; // 20 ms
+/// Audio kept on either side of detected speech.
+const PAD_FRAMES: usize = 15; // 300 ms
+/// Longest pause kept inside a recording.
+const MAX_GAP_FRAMES: usize = 50; // 1 s
+
+/// Cuts leading and trailing silence and shortens long pauses. The threshold
+/// adapts to the recording's own noise floor, so a hissy mic doesn't get
+/// everything cut and a quiet one doesn't keep everything.
+///
+/// Returns an empty buffer when nothing in the clip rises above the floor.
+fn trim_silence(audio: &[f32]) -> Vec<f32> {
+    let frames: Vec<&[f32]> = audio.chunks(FRAME).collect();
+    if frames.is_empty() {
+        return Vec::new();
+    }
+
+    let rms: Vec<f32> = frames
+        .iter()
+        .map(|f| (f.iter().map(|s| s * s).sum::<f32>() / f.len() as f32).sqrt())
+        .collect();
+
+    let mut sorted = rms.clone();
+    sorted.sort_by(|a, b| a.total_cmp(b));
+    let floor = sorted[sorted.len() / 5]; // 20th percentile ≈ the room
+    let threshold = (floor * 4.0).clamp(0.005, 0.03);
+
+    let loud: Vec<bool> = rms.iter().map(|&r| r > threshold).collect();
+    let Some(first) = loud.iter().position(|&l| l) else {
+        return Vec::new();
+    };
+    let last = loud.iter().rposition(|&l| l).unwrap_or(first);
+
+    let start = first.saturating_sub(PAD_FRAMES);
+    let end = (last + PAD_FRAMES + 1).min(frames.len());
+
+    let mut out = Vec::with_capacity((end - start) * FRAME);
+    let mut quiet_run = 0usize;
+    for i in start..end {
+        if loud[i] {
+            quiet_run = 0;
+        } else {
+            quiet_run += 1;
+        }
+        if quiet_run <= MAX_GAP_FRAMES {
+            out.extend_from_slice(frames[i]);
+        }
+    }
+    out
 }

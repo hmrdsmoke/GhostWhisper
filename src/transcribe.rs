@@ -18,20 +18,17 @@ struct Loaded {
 
 static MODEL: OnceLock<Mutex<Option<Loaded>>> = OnceLock::new();
 
-/// Where model files live: `$XDG_DATA_HOME/ghostwriter/models`
-/// (normally `~/.local/share/ghostwriter/models`).
-pub fn models_dir() -> PathBuf {
-    let base = std::env::var_os("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))
-        .unwrap_or_else(|| PathBuf::from("."));
-    base.join("ghostwriter").join("models")
-}
-
-/// Runs Whisper over 16 kHz mono audio and returns the text.
+/// Runs Whisper over 16 kHz mono audio and returns the text. Empty audio
+/// (nothing above the noise floor) returns an empty string without running
+/// the model — pure silence is where Whisper hallucinates "Thank you."
 ///
 /// Blocking — call it from `spawn_blocking`, never on the UI thread.
 pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<String, String> {
+    if audio.is_empty() {
+        eprintln!("ghostwriter: no speech in the clip, skipping");
+        return Ok(String::new());
+    }
+
     // whisper.cpp refuses anything under a second; pad short clips with silence.
     let min_len = WHISPER_RATE as usize * 6 / 5;
     let mut audio = audio.to_vec();
@@ -68,6 +65,9 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
     params.set_suppress_blank(true);
     // Drop non-speech tokens like [BLANK_AUDIO] and [MUSIC].
     params.set_suppress_nst(true);
+    // Don't feed each 30 s window the previous one's text; that's how one
+    // hallucinated sentence turns into twenty.
+    params.set_no_context(true);
 
     let started = std::time::Instant::now();
     state
@@ -92,7 +92,7 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
         started.elapsed().as_secs_f32()
     );
 
-    Ok(text.trim().to_string())
+    Ok(collapse_repeats(text.trim()))
 }
 
 /// `[BLANK_AUDIO]`, `(silence)`, `*music*` — Whisper's ways of saying "nothing said".
@@ -101,6 +101,42 @@ fn is_marker(segment: &str) -> bool {
         segment.starts_with(open) && segment.ends_with(close) && segment.len() > 1
     };
     wrapped('[', ']') || wrapped('(', ')') || wrapped('*', '*')
+}
+
+/// Keeps at most two consecutive copies of the same sentence. Saying
+/// "No. No." on purpose survives; a hallucinated "Thank you." × 20 doesn't.
+fn collapse_repeats(text: &str) -> String {
+    let mut sentences: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        current.push(c);
+        let ends_sentence = matches!(c, '.' | '!' | '?')
+            && chars.peek().is_none_or(|next| next.is_whitespace());
+        if ends_sentence {
+            sentences.push(std::mem::take(&mut current));
+        }
+    }
+    if !current.trim().is_empty() {
+        sentences.push(current);
+    }
+
+    let mut out = String::new();
+    let mut previous: Option<String> = None;
+    let mut run = 0usize;
+    for sentence in sentences {
+        let key = sentence.trim().to_lowercase();
+        if previous.as_deref() == Some(key.as_str()) {
+            run += 1;
+        } else {
+            previous = Some(key);
+            run = 1;
+        }
+        if run <= 2 {
+            out.push_str(&sentence);
+        }
+    }
+    out.trim().to_string()
 }
 
 fn threads() -> i32 {

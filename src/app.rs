@@ -2,7 +2,7 @@
 
 use crate::audio::{Recorder, WHISPER_RATE};
 use crate::config::Config;
-use crate::{dbus, transcribe, typer};
+use crate::{dbus, model, notify, transcribe, typer};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
 use cosmic::iced::Subscription;
 use cosmic::prelude::*;
@@ -26,6 +26,8 @@ pub struct AppModel {
     recorder: Option<Recorder>,
     /// True while Whisper (and the typer) run in the background.
     transcribing: bool,
+    /// True while the model file is being fetched.
+    downloading: bool,
 }
 
 /// Messages emitted by the application and its widgets.
@@ -34,7 +36,35 @@ pub enum Message {
     /// `typing` is true when the toggle came in over D-Bus from the hotkey.
     ToggleListening { typing: bool },
     Transcribed(Result<String, String>),
+    ModelReady(Result<(), String>),
     UpdateConfig(Config),
+}
+
+impl AppModel {
+    /// Starts a background download if the configured model isn't on disk.
+    /// No-op when it's there already or a download is in flight.
+    fn ensure_model(&mut self) -> Task<cosmic::Action<Message>> {
+        if self.downloading {
+            return Task::none();
+        }
+        let name = self.config.model.clone();
+        if model::is_ready(&name) {
+            return Task::none();
+        }
+
+        self.downloading = true;
+        eprintln!("ghostwriter: model {name} not found, downloading");
+        notify::send(&format!(
+            "Downloading the {name} speech model. Dictation will work once it's done."
+        ));
+
+        cosmic::task::future(async move {
+            let result = tokio::task::spawn_blocking(move || model::ensure(&name).map(|_| ()))
+                .await
+                .unwrap_or_else(|e| Err(format!("download task panicked: {e}")));
+            Message::ModelReady(result)
+        })
+    }
 }
 
 /// Create a COSMIC application from the app model
@@ -76,15 +106,21 @@ impl cosmic::Application for AppModel {
         // transcriptions just stay on stdout.
         if let Err(e) = typer::init() {
             eprintln!("ghostwriter: {e}; typing disabled, text will go to stdout only");
+            notify::send(
+                "Can't open /dev/uinput, so dictation can't type yet. \
+                 See the README for the one-time udev setup.",
+            );
         }
 
-        let app = AppModel {
+        let mut app = AppModel {
             core,
             config,
             ..Default::default()
         };
 
-        (app, Task::none())
+        // First run: fetch the model in the background.
+        let task = app.ensure_model();
+        (app, task)
     }
 
     /// The panel button. The icon reflects what the applet is doing.
@@ -93,6 +129,8 @@ impl cosmic::Application for AppModel {
             "media-record-symbolic"
         } else if self.transcribing {
             "content-loading-symbolic"
+        } else if self.downloading {
+            "folder-download-symbolic"
         } else {
             "audio-input-microphone-symbolic"
         };
@@ -117,42 +155,81 @@ impl cosmic::Application for AppModel {
     /// Handles messages emitted by the application and its widgets.
     fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
         match message {
-            Message::UpdateConfig(config) => self.config = config,
+            Message::UpdateConfig(config) => {
+                let model_changed = config.model != self.config.model;
+                self.config = config;
+                if model_changed {
+                    return self.ensure_model();
+                }
+            }
+
+            Message::ModelReady(result) => {
+                self.downloading = false;
+                match result {
+                    Ok(()) => notify::send("Speech model ready. Hotkey, talk, hotkey."),
+                    Err(e) => {
+                        eprintln!("ghostwriter: {e}");
+                        notify::send(&format!(
+                            "Couldn't download the speech model: {e}. \
+                             It'll retry on your next dictation."
+                        ));
+                    }
+                }
+            }
 
             Message::ToggleListening { typing } => {
                 if let Some(recorder) = self.recorder.take() {
-                    // Second toggle: stop capturing, then transcribe and type off the UI thread.
-                    match recorder.stop() {
-                        Ok(audio) => {
-                            self.transcribing = true;
-                            let model = transcribe::models_dir().join(&self.config.model);
-                            let language = self.config.language.clone();
-                            eprintln!(
-                                "ghostwriter: captured {:.1}s, transcribing{}",
-                                audio.len() as f32 / WHISPER_RATE as f32,
-                                if typing { " and typing" } else { "" }
-                            );
-                            return cosmic::task::future(async move {
-                                let result = tokio::task::spawn_blocking(
-                                    move || -> Result<String, String> {
-                                        let text =
-                                            transcribe::transcribe(&model, &language, &audio)?;
-                                        if typing && !text.is_empty() {
-                                            std::thread::sleep(HOTKEY_GRACE);
-                                            // Trailing space so back-to-back dictations
-                                            // don't run together.
-                                            typer::type_text(&format!("{text} "))?;
-                                        }
-                                        Ok(text)
-                                    },
-                                )
-                                .await
-                                .unwrap_or_else(|e| Err(format!("dictation task panicked: {e}")));
-                                Message::Transcribed(result)
-                            });
+                    // Second toggle: stop capturing first so the mic is released either way.
+                    let audio = match recorder.stop() {
+                        Ok(audio) => audio,
+                        Err(e) => {
+                            eprintln!("ghostwriter: {e}");
+                            return Task::none();
                         }
-                        Err(e) => eprintln!("ghostwriter: {e}"),
+                    };
+
+                    // No model yet: say so and drop the clip. Typing it minutes
+                    // later into whatever has focus by then would be worse.
+                    if !model::is_ready(&self.config.model) {
+                        let notice = if self.downloading {
+                            format!(
+                                "Still downloading the speech model ({}%). Try again in a bit.",
+                                model::progress()
+                            )
+                        } else {
+                            String::from("The speech model isn't downloaded yet. Fetching it now.")
+                        };
+                        eprintln!("ghostwriter: {notice}");
+                        notify::send(&notice);
+                        return self.ensure_model();
                     }
+
+                    self.transcribing = true;
+                    let model_path = model::path_for(&self.config.model);
+                    let language = self.config.language.clone();
+                    eprintln!(
+                        "ghostwriter: captured {:.1}s, transcribing{}",
+                        audio.len() as f32 / WHISPER_RATE as f32,
+                        if typing { " and typing" } else { "" }
+                    );
+                    return cosmic::task::future(async move {
+                        let result = tokio::task::spawn_blocking(
+                            move || -> Result<String, String> {
+                                let text =
+                                    transcribe::transcribe(&model_path, &language, &audio)?;
+                                if typing && !text.is_empty() {
+                                    std::thread::sleep(HOTKEY_GRACE);
+                                    // Trailing space so back-to-back dictations
+                                    // don't run together.
+                                    typer::type_text(&format!("{text} "))?;
+                                }
+                                Ok(text)
+                            },
+                        )
+                        .await
+                        .unwrap_or_else(|e| Err(format!("dictation task panicked: {e}")));
+                        Message::Transcribed(result)
+                    });
                 } else {
                     // First toggle: start listening.
                     match Recorder::start() {
@@ -160,7 +237,10 @@ impl cosmic::Application for AppModel {
                             self.recorder = Some(recorder);
                             eprintln!("ghostwriter: listening");
                         }
-                        Err(e) => eprintln!("ghostwriter: {e}"),
+                        Err(e) => {
+                            eprintln!("ghostwriter: {e}");
+                            notify::send(&format!("Can't record: {e}"));
+                        }
                     }
                 }
             }
@@ -169,7 +249,10 @@ impl cosmic::Application for AppModel {
                 self.transcribing = false;
                 match result {
                     Ok(text) => println!("{text}"),
-                    Err(e) => eprintln!("ghostwriter: {e}"),
+                    Err(e) => {
+                        eprintln!("ghostwriter: {e}");
+                        notify::send(&format!("Dictation failed: {e}"));
+                    }
                 }
             }
         }

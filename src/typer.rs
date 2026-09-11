@@ -26,8 +26,8 @@ pub fn init() -> Result<(), String> {
     }
 
     let mut keys = AttributeSet::<KeyCode>::new();
-    for code in LETTERS.iter().chain(DIGITS.iter()).chain(OTHER_KEYS.iter()) {
-        keys.insert(*code);
+    for code in all_keys() {
+        keys.insert(code);
     }
 
     let device = VirtualDevice::builder()
@@ -47,16 +47,26 @@ pub fn init() -> Result<(), String> {
 }
 
 /// Types `text` as key presses. Blocking; call it off the UI thread.
+///
+/// Whatever happens, every key this device knows is released afterwards. A
+/// key left held on a virtual keyboard makes the compositor treat the physical
+/// keyboard as if that key were down, until the device goes away.
 pub fn type_text(text: &str) -> Result<(), String> {
     let keyboard = KEYBOARD
         .get()
         .ok_or_else(|| String::from("virtual keyboard not initialised"))?;
     let mut device = keyboard.lock().unwrap_or_else(|p| p.into_inner());
 
+    let result = type_chars(&mut device, text);
+    let released = release_all(&mut device);
+    result.and(released)
+}
+
+fn type_chars(device: &mut VirtualDevice, text: &str) -> Result<(), String> {
     let mut skipped = 0usize;
     for c in normalise(text).chars() {
         match keystroke(c) {
-            Some((key, shift)) => press(&mut device, key, shift)?,
+            Some((key, shift)) => press(device, key, shift)?,
             None => skipped += 1,
         }
     }
@@ -77,6 +87,15 @@ fn press(device: &mut VirtualDevice, key: KeyCode, shift: bool) -> Result<(), St
     }
     sleep(KEY_DELAY);
     Ok(())
+}
+
+/// Sends a release for every registered key. The kernel drops releases for
+/// keys that aren't down, so this only ever changes things when it should.
+fn release_all(device: &mut VirtualDevice) -> Result<(), String> {
+    let events: Vec<InputEvent> = all_keys().map(|key| *KeyEvent::new(key, 0)).collect();
+    device
+        .emit(&events)
+        .map_err(|e| format!("uinput release failed: {e}"))
 }
 
 /// One key event plus the SYN_REPORT that `emit` appends for us.
@@ -146,6 +165,15 @@ fn keystroke(c: char) -> Option<(KeyCode, bool)> {
         _ => return None,
     };
     Some(stroke)
+}
+
+/// Every key the virtual keyboard registers and may press.
+fn all_keys() -> impl Iterator<Item = KeyCode> {
+    LETTERS
+        .iter()
+        .chain(DIGITS.iter())
+        .chain(OTHER_KEYS.iter())
+        .copied()
 }
 
 const LETTERS: [KeyCode; 26] = [
