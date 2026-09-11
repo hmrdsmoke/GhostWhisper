@@ -192,12 +192,16 @@ const FRAME: usize = WHISPER_RATE as usize / 50; // 20 ms
 const PAD_FRAMES: usize = 15; // 300 ms
 /// Longest pause kept inside a recording.
 const MAX_GAP_FRAMES: usize = 50; // 1 s
+/// Loud audio shorter than this is a click, not speech. The hotkey press
+/// itself shows up in the recording as one or two loud frames.
+const MIN_SPEECH_FRAMES: usize = 15; // 300 ms
 
 /// Cuts leading and trailing silence and shortens long pauses. The threshold
 /// adapts to the recording's own noise floor, so a hissy mic doesn't get
 /// everything cut and a quiet one doesn't keep everything.
 ///
-/// Returns an empty buffer when nothing in the clip rises above the floor.
+/// Returns an empty buffer when nothing in the clip rises above the floor
+/// for long enough to be speech.
 fn trim_silence(audio: &[f32]) -> Vec<f32> {
     let frames: Vec<&[f32]> = audio.chunks(FRAME).collect();
     if frames.is_empty() {
@@ -215,6 +219,9 @@ fn trim_silence(audio: &[f32]) -> Vec<f32> {
     let threshold = (floor * 4.0).clamp(0.005, 0.03);
 
     let loud: Vec<bool> = rms.iter().map(|&r| r > threshold).collect();
+    if loud.iter().filter(|&&l| l).count() < MIN_SPEECH_FRAMES {
+        return Vec::new();
+    }
     let Some(first) = loud.iter().position(|&l| l) else {
         return Vec::new();
     };

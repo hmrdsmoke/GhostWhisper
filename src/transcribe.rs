@@ -18,6 +18,9 @@ struct Loaded {
 
 static MODEL: OnceLock<Mutex<Option<Loaded>>> = OnceLock::new();
 
+/// Segments Whisper itself rates this likely to be non-speech are discarded.
+const NO_SPEECH_THRESHOLD: f32 = 0.6;
+
 /// Runs Whisper over 16 kHz mono audio and returns the text. Empty audio
 /// (nothing above the noise floor) returns an empty string without running
 /// the model — pure silence is where Whisper hallucinates "Thank you."
@@ -79,6 +82,16 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
         let piece = segment
             .to_str_lossy()
             .map_err(|e| format!("bad segment text: {e}"))?;
+        // Whisper's own estimate that nobody spoke here. Its captions for
+        // silence and noise ("Thank you.") come with a high one.
+        let no_speech = segment.no_speech_probability();
+        if no_speech > NO_SPEECH_THRESHOLD {
+            eprintln!(
+                "ghostwriter: dropped segment {:?} (no-speech probability {no_speech:.2})",
+                piece.trim()
+            );
+            continue;
+        }
         // Belt and braces: a marker that gets past suppress_nst is never dictation.
         if is_marker(piece.trim()) {
             continue;
