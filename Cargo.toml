@@ -1,10 +1,10 @@
 [package]
-name = "ghostwriter"
+name = "ghostwhisper"
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-only"
 description = "Local speech-to-text dictation for the COSMIC desktop"
-repository = "https://github.com/hmrdsmoke/GhostWriter"
+repository = "https://github.com/hmrdsmoke/GhostWhisper"
 
 # Whisper backend. The default is CUDA (NVIDIA). Build with
 #   --no-default-features                    for CPU only
@@ -28,7 +28,7 @@ cpal = "0.18"
 whisper-rs = "0.16"
 # Virtual keyboard on /dev/uinput — how the text reaches the focused window.
 evdev = "0.13"
-# Session-bus endpoint so a hotkey (`ghostwriter --toggle`) can reach the running applet.
+# Session-bus endpoint so a hotkey (`ghostwhisper --toggle`) can reach the running applet.
 zbus = { version = "5", default-features = false, features = ["tokio"] }
 # Fetching the model when the user asks for it.
 ureq = "3"
@@ -81,20 +81,20 @@ window has keyboard focus, through a virtual keyboard on /dev/uinput. \
 Speech recognition runs locally with Whisper (whisper.cpp); no audio leaves \
 the machine. This package is built for NVIDIA GPUs (CUDA)."""
 assets = [
-    ["target/release/ghostwriter", "usr/bin/", "755"],
-    ["target/xdgen/app.desktop", "usr/share/applications/io.github.hmrdsmoke.GhostWriter.desktop", "644"],
-    ["target/xdgen/app.metainfo.xml", "usr/share/metainfo/io.github.hmrdsmoke.GhostWriter.metainfo.xml", "644"],
-    ["resources/icon.svg", "usr/share/icons/hicolor/scalable/apps/io.github.hmrdsmoke.GhostWriter.svg", "644"],
-    ["resources/70-ghostwriter-uinput.rules", "usr/lib/udev/rules.d/", "644"],
-    ["README.md", "usr/share/doc/ghostwriter/README.md", "644"],
-    ["licenses.html", "usr/share/doc/ghostwriter/licenses.html", "644"],
+    ["target/release/ghostwhisper", "usr/bin/", "755"],
+    ["target/xdgen/app.desktop", "usr/share/applications/io.github.hmrdsmoke.GhostWhisper.desktop", "644"],
+    ["target/xdgen/app.metainfo.xml", "usr/share/metainfo/io.github.hmrdsmoke.GhostWhisper.metainfo.xml", "644"],
+    ["resources/icon.svg", "usr/share/icons/hicolor/scalable/apps/io.github.hmrdsmoke.GhostWhisper.svg", "644"],
+    ["resources/70-ghostwhisper-uinput.rules", "usr/lib/udev/rules.d/", "644"],
+    ["README.md", "usr/share/doc/ghostwhisper/README.md", "644"],
+    ["licenses.html", "usr/share/doc/ghostwhisper/licenses.html", "644"],
 ]
 
 # `cargo deb --variant cpu` / `--variant vulkan` for machines without CUDA.
 [package.metadata.deb.variants.cpu]
-name = "ghostwriter-cpu"
+name = "ghostwhisper-cpu"
 default-features = false
-conflicts = "ghostwriter, ghostwriter-vulkan"
+conflicts = "ghostwhisper, ghostwhisper-vulkan"
 extended-description = """\
 Press a hotkey, talk, press it again: the words are typed into whatever \
 window has keyboard focus, through a virtual keyboard on /dev/uinput. \
@@ -102,10 +102,10 @@ Speech recognition runs locally with Whisper (whisper.cpp); no audio leaves \
 the machine. This package runs Whisper on the CPU."""
 
 [package.metadata.deb.variants.vulkan]
-name = "ghostwriter-vulkan"
+name = "ghostwhisper-vulkan"
 default-features = false
 features = ["vulkan"]
-conflicts = "ghostwriter, ghostwriter-cpu"
+conflicts = "ghostwhisper, ghostwhisper-cpu"
 extended-description = """\
 Press a hotkey, talk, press it again: the words are typed into whatever \
 window has keyboard focus, through a virtual keyboard on /dev/uinput. \

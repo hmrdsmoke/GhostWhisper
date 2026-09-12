@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 //! Microphone capture.
 //!
@@ -30,7 +30,7 @@ impl Recorder {
         let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
 
         thread::Builder::new()
-            .name("ghostwriter-capture".into())
+            .name("ghostwhisper-capture".into())
             .spawn(move || {
                 let capture = match Capture::open() {
                     Ok(capture) => capture,
@@ -106,7 +106,7 @@ impl Capture {
             .play()
             .map_err(|e| format!("failed to start capture: {e}"))?;
 
-        eprintln!("ghostwriter: capturing at {rate} Hz, {channels} channel(s), {format:?}");
+        eprintln!("ghostwhisper: capturing at {rate} Hz, {channels} channel(s), {format:?}");
 
         Ok(Self {
             stream,
@@ -124,7 +124,7 @@ impl Capture {
         let resampled = resample(&mono, self.rate, WHISPER_RATE);
         let trimmed = trim_silence(&resampled);
         eprintln!(
-            "ghostwriter: {:.1}s recorded, {:.1}s after trimming silence",
+            "ghostwhisper: {:.1}s recorded, {:.1}s after trimming silence",
             resampled.len() as f32 / WHISPER_RATE as f32,
             trimmed.len() as f32 / WHISPER_RATE as f32
         );
@@ -149,7 +149,7 @@ where
                     buf.extend(data.iter().map(|s| f32::from_sample(*s)));
                 }
             },
-            |err| eprintln!("ghostwriter: capture error: {err}"),
+            |err| eprintln!("ghostwhisper: capture error: {err}"),
             None,
         )
         .map_err(|e| format!("failed to build input stream: {e}"))

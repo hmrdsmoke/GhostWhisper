@@ -1,37 +1,27 @@
 #!/bin/sh
-# GhostWriter post-install: everything the virtual keyboard needs except the
-# one thing a package can't do for you — put your user in the group.
+# GhostWhisper post-install: everything the virtual keyboard needs except the
+# one thing a package cannot do for you - put your user in the group.
 set -e
 
 if [ "$1" = "configure" ]; then
-    # Group allowed to create virtual input devices; the udev rule refers to it.
     if ! getent group uinput >/dev/null; then
         groupadd --system uinput
     fi
 
-    # Make sure /dev/uinput exists now and after a reboot.
     modprobe uinput 2>/dev/null || true
     if [ -d /etc/modules-load.d ]; then
-        echo uinput > /etc/modules-load.d/ghostwriter-uinput.conf
+        echo uinput > /etc/modules-load.d/ghostwhisper-uinput.conf
     fi
 
-    # Apply the packaged udev rule to the device node that already exists.
     if command -v udevadm >/dev/null 2>&1; then
         udevadm control --reload-rules || true
         udevadm trigger --name-match=uinput || true
     fi
 
-    cat <<'EOF'
-
-GhostWriter: one step left so dictation can type into your windows:
-
-    sudo usermod -aG uinput $USER
-
-then log out and back in. After that: add the applet to the panel
-(Settings > Desktop > Panel), click its icon to download the speech model,
-and bind a custom keyboard shortcut to:  ghostwriter --toggle
-
-EOF
+    printf '\n%s\n\n    %s\n\n%s\n\n' \
+      "GhostWhisper: one step left so dictation can type into your windows:" \
+      "sudo usermod -aG uinput \$USER" \
+      "then log out and back in. After that: add the applet to the panel (Settings > Desktop > Panel), click its icon to download the speech model, and bind a custom keyboard shortcut to:  ghostwhisper --toggle"
 fi
 
 exit 0

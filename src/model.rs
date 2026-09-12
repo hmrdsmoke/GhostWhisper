@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 //! Model files: where they live, which one this build defaults to, and
 //! fetching them from Hugging Face on first run so the applet works out of
@@ -25,14 +25,14 @@ static PROGRESS: AtomicU8 = AtomicU8::new(0);
 /// Serialises downloads so two callers can't fetch the same file at once.
 static DOWNLOAD: Mutex<()> = Mutex::new(());
 
-/// Where model files live: `$XDG_DATA_HOME/ghostwriter/models`
-/// (normally `~/.local/share/ghostwriter/models`).
+/// Where model files live: `$XDG_DATA_HOME/ghostwhisper/models`
+/// (normally `~/.local/share/ghostwhisper/models`).
 pub fn models_dir() -> PathBuf {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))
         .unwrap_or_else(|| PathBuf::from("."));
-    base.join("ghostwriter").join("models")
+    base.join("ghostwhisper").join("models")
 }
 
 pub fn path_for(name: &str) -> PathBuf {
@@ -84,7 +84,7 @@ fn download(name: &str, path: &Path) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
 
     let url = format!("{BASE_URL}/{name}");
-    eprintln!("ghostwriter: downloading {url}");
+    eprintln!("ghostwhisper: downloading {url}");
     PROGRESS.store(0, Ordering::Relaxed);
 
     let mut response = ureq::get(&url)
@@ -119,7 +119,7 @@ fn download(name: &str, path: &Path) -> Result<(), String> {
             let pct = (done * 100 / total).min(100) as u8;
             PROGRESS.store(pct, Ordering::Relaxed);
             if pct / 10 > last_logged / 10 {
-                eprintln!("ghostwriter: {name} {pct}%");
+                eprintln!("ghostwhisper: {name} {pct}%");
                 last_logged = pct;
             }
         }
@@ -140,6 +140,6 @@ fn download(name: &str, path: &Path) -> Result<(), String> {
     fs::rename(&part, path)
         .map_err(|e| format!("cannot move model into place at {}: {e}", path.display()))?;
     PROGRESS.store(100, Ordering::Relaxed);
-    eprintln!("ghostwriter: model ready at {}", path.display());
+    eprintln!("ghostwhisper: model ready at {}", path.display());
     Ok(())
 }

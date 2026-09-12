@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.hmrdsmoke.GhostWriter</id>
+  <id>io.github.hmrdsmoke.GhostWhisper</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0</project_license>
-  <name>Ghostwriter</name>
+  <project_license>GPL-3.0-only</project_license>
+  <name>GhostWhisper</name>
   <summary>Local speech-to-text dictation for the COSMIC desktop</summary>
   <icon type="remote" width="64" height="64" scale="1">
-    https://github.com/hmrdsmoke/GhostWriter/raw/main/resources/icons/hicolor/scalable/apps/icon.svg
+    https://github.com/hmrdsmoke/GhostWhisper/raw/main/resources/icons/hicolor/scalable/apps/icon.svg
   </icon>
-  <url type="vcs-browser">https://github.com/hmrdsmoke/GhostWriter</url>
-  <launchable type="desktop-id">io.github.hmrdsmoke.GhostWriter.desktop</launchable>
+  <url type="vcs-browser">https://github.com/hmrdsmoke/GhostWhisper</url>
+  <launchable type="desktop-id">io.github.hmrdsmoke.GhostWhisper.desktop</launchable>
   <provides>
     <id>com.system76.CosmicApplet</id>
     <binaries>
-      <binary>ghostwriter</binary>
+      <binary>ghostwhisper</binary>
     </binaries>
   </provides>
   <requires>

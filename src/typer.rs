@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 //! Types text into whatever window has keyboard focus, by way of a virtual
 //! keyboard on /dev/uinput. The compositor sees ordinary key presses, so this
 //! works in any app on any display server — terminals included.
 //!
-//! Needs read/write access to /dev/uinput; see resources/70-ghostwriter-uinput.rules.
+//! Needs read/write access to /dev/uinput; see resources/70-ghostwhisper-uinput.rules.
 //! Keycodes are US layout. Anything the US keymap can't produce is dropped.
 
 use evdev::uinput::VirtualDevice;
@@ -36,9 +36,9 @@ pub fn init() -> Result<(), String> {
 
     let device = VirtualDevice::builder()
         .map_err(|e| {
-            format!("cannot open /dev/uinput: {e} (see resources/70-ghostwriter-uinput.rules)")
+            format!("cannot open /dev/uinput: {e} (see resources/70-ghostwhisper-uinput.rules)")
         })?
-        .name("GhostWriter virtual keyboard")
+        .name("GhostWhisper virtual keyboard")
         .with_keys(&keys)
         .map_err(|e| format!("cannot register keys on virtual keyboard: {e}"))?
         .build()
@@ -75,7 +75,7 @@ fn type_chars(device: &mut VirtualDevice, text: &str) -> Result<(), String> {
         }
     }
     if skipped > 0 {
-        eprintln!("ghostwriter: skipped {skipped} character(s) the US keymap can't type");
+        eprintln!("ghostwhisper: skipped {skipped} character(s) the US keymap can't type");
     }
     Ok(())
 }

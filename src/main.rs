@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 mod app;
 mod audio;
@@ -13,20 +13,20 @@ mod typer;
 fn main() -> cosmic::iced::Result {
     let mut args = std::env::args().skip(1);
     match args.next().as_deref() {
-        // `ghostwriter --toggle`: poke the running applet. This is what the hotkey runs.
+        // `ghostwhisper --toggle`: poke the running applet. This is what the hotkey runs.
         Some("--toggle") => exit_with(dbus::send_toggle()),
 
-        // `ghostwriter --type some words`: exercise the virtual keyboard without Whisper.
+        // `ghostwhisper --type some words`: exercise the virtual keyboard without Whisper.
         Some("--type") => {
             let text = args.collect::<Vec<_>>().join(" ");
             exit_with(typer::init().and_then(|()| {
-                eprintln!("ghostwriter: typing in 3 seconds, focus a text field now");
+                eprintln!("ghostwhisper: typing in 3 seconds, focus a text field now");
                 std::thread::sleep(std::time::Duration::from_secs(3));
                 typer::type_text(&text)
             }))
         }
 
-        Some(other) => eprintln!("ghostwriter: ignoring unknown argument {other}"),
+        Some(other) => eprintln!("ghostwhisper: ignoring unknown argument {other}"),
         None => {}
     }
 
@@ -44,7 +44,7 @@ fn exit_with(result: Result<(), String>) -> ! {
     match result {
         Ok(()) => std::process::exit(0),
         Err(e) => {
-            eprintln!("ghostwriter: {e}");
+            eprintln!("ghostwhisper: {e}");
             std::process::exit(1)
         }
     }

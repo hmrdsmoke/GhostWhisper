@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 use crate::audio::{Recorder, WHISPER_RATE};
 use crate::config::Config;
@@ -79,7 +79,7 @@ impl AppModel {
 
         self.downloading = true;
         self.download_error = None;
-        eprintln!("ghostwriter: downloading {name}");
+        eprintln!("ghostwhisper: downloading {name}");
         notify::send(&format!(
             "Downloading {name} ({}). You'll get a notification when it's ready.",
             model::size_hint(&name)
@@ -101,7 +101,7 @@ impl AppModel {
             )
         } else {
             format!(
-                "GhostWriter needs the {} speech model ({}). Click the panel icon to download it.",
+                "GhostWhisper needs the {} speech model ({}). Click the panel icon to download it.",
                 self.config.model,
                 model::size_hint(&self.config.model)
             )
@@ -121,7 +121,7 @@ impl cosmic::Application for AppModel {
     type Message = Message;
 
     /// Unique identifier in RDNN (reverse domain name notation) format.
-    const APP_ID: &'static str = "io.github.hmrdsmoke.GhostWriter";
+    const APP_ID: &'static str = "io.github.hmrdsmoke.GhostWhisper";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -149,7 +149,7 @@ impl cosmic::Application for AppModel {
         let can_type = match typer::init() {
             Ok(()) => true,
             Err(e) => {
-                eprintln!("ghostwriter: {e}; typing disabled");
+                eprintln!("ghostwhisper: {e}; typing disabled");
                 notify::send("Can't open /dev/uinput, so dictation can't type yet. Click the panel icon for the fix.");
                 false
             }
@@ -205,7 +205,7 @@ impl cosmic::Application for AppModel {
         };
 
         let mut rows: Vec<Element<'_, Message>> = vec![
-            widget::text::title4("GhostWriter").into(),
+            widget::text::title4("GhostWhisper").into(),
             widget::text::body(format!("Status: {status}")).into(),
             widget::divider::horizontal::default().into(),
             widget::text::caption_heading("Model").into(),
@@ -253,7 +253,7 @@ impl cosmic::Application for AppModel {
         rows.push(widget::text::caption_heading("Hotkey").into());
         rows.push(
             widget::text::caption(
-                "Bind a custom keyboard shortcut to:  ghostwriter --toggle",
+                "Bind a custom keyboard shortcut to:  ghostwhisper --toggle",
             )
             .into(),
         );
@@ -340,7 +340,7 @@ impl cosmic::Application for AppModel {
                         notify::send("Speech model ready. Hotkey, talk, hotkey.");
                     }
                     Err(e) => {
-                        eprintln!("ghostwriter: {e}");
+                        eprintln!("ghostwhisper: {e}");
                         notify::send(&format!("Couldn't download the speech model: {e}"));
                         self.download_error = Some(e);
                     }
@@ -364,7 +364,7 @@ impl cosmic::Application for AppModel {
                     let audio = match recorder.stop() {
                         Ok(audio) => audio,
                         Err(e) => {
-                            eprintln!("ghostwriter: {e}");
+                            eprintln!("ghostwhisper: {e}");
                             return Task::none();
                         }
                     };
@@ -373,7 +373,7 @@ impl cosmic::Application for AppModel {
                     // into whatever has focus by then would be worse.
                     if !model::is_ready(&self.config.model) {
                         let notice = self.model_missing_notice();
-                        eprintln!("ghostwriter: {notice}");
+                        eprintln!("ghostwhisper: {notice}");
                         notify::send(&notice);
                         return Task::none();
                     }
@@ -383,7 +383,7 @@ impl cosmic::Application for AppModel {
                     let language = self.config.language.clone();
                     let can_type = self.can_type;
                     let audio_secs = audio.len() as f32 / WHISPER_RATE as f32;
-                    eprintln!("ghostwriter: captured {audio_secs:.1}s of speech, transcribing");
+                    eprintln!("ghostwhisper: captured {audio_secs:.1}s of speech, transcribing");
                     return cosmic::task::future(async move {
                         let result = tokio::task::spawn_blocking(
                             move || -> Result<Dictation, String> {
@@ -413,10 +413,10 @@ impl cosmic::Application for AppModel {
                     match Recorder::start() {
                         Ok(recorder) => {
                             self.recorder = Some(recorder);
-                            eprintln!("ghostwriter: listening");
+                            eprintln!("ghostwhisper: listening");
                         }
                         Err(e) => {
-                            eprintln!("ghostwriter: {e}");
+                            eprintln!("ghostwhisper: {e}");
                             notify::send(&format!("Can't record: {e}"));
                         }
                     }
@@ -431,7 +431,7 @@ impl cosmic::Application for AppModel {
                         self.last = Some(dictation);
                     }
                     Err(e) => {
-                        eprintln!("ghostwriter: {e}");
+                        eprintln!("ghostwhisper: {e}");
                         notify::send(&format!("Dictation failed: {e}"));
                     }
                 }

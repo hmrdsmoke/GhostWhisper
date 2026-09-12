@@ -1,7 +1,7 @@
 # cargo-about configuration.
 #
 # Generates the third-party license page that ships in the .deb at
-# usr/share/doc/ghostwriter/licenses.html:
+# usr/share/doc/ghostwhisper/licenses.html:
 #
 #     cargo about generate about.hbs -o licenses.html
 #

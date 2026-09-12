@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0-only
 
 //! Whisper inference.
 //!
@@ -28,7 +28,7 @@ const NO_SPEECH_THRESHOLD: f32 = 0.6;
 /// Blocking — call it from `spawn_blocking`, never on the UI thread.
 pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<String, String> {
     if audio.is_empty() {
-        eprintln!("ghostwriter: no speech in the clip, skipping");
+        eprintln!("ghostwhisper: no speech in the clip, skipping");
         return Ok(String::new());
     }
 
@@ -44,7 +44,7 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
 
     let needs_load = guard.as_ref().is_none_or(|loaded| loaded.path != model_path);
     if needs_load {
-        eprintln!("ghostwriter: loading model {}", model_path.display());
+        eprintln!("ghostwhisper: loading model {}", model_path.display());
         let ctx = WhisperContext::new_with_params(model_path, WhisperContextParameters::default())
             .map_err(|e| format!("failed to load model {}: {e}", model_path.display()))?;
         *guard = Some(Loaded {
@@ -87,7 +87,7 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
         let no_speech = segment.no_speech_probability();
         if no_speech > NO_SPEECH_THRESHOLD {
             eprintln!(
-                "ghostwriter: dropped segment {:?} (no-speech probability {no_speech:.2})",
+                "ghostwhisper: dropped segment {:?} (no-speech probability {no_speech:.2})",
                 piece.trim()
             );
             continue;
@@ -100,7 +100,7 @@ pub fn transcribe(model_path: &Path, language: &str, audio: &[f32]) -> Result<St
     }
 
     eprintln!(
-        "ghostwriter: transcribed {:.1}s of audio in {:.2}s",
+        "ghostwhisper: transcribed {:.1}s of audio in {:.2}s",
         audio.len() as f32 / WHISPER_RATE as f32,
         started.elapsed().as_secs_f32()
     );

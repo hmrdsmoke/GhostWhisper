@@ -1996,7 +1996,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ghostwriter"
+name = "ghostwhisper"
 version = "0.1.0"
 dependencies = [
  "cpal",

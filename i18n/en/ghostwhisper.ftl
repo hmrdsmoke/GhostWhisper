@@ -1,4 +1,4 @@
-app-title = Ghostwriter
+app-title = GhostWhisper
 app-comment = Local speech-to-text dictation for the COSMIC desktop
 app-keywords =
 about = About

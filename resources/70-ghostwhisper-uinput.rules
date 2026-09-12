@@ -1,4 +1,4 @@
-# GhostWriter — let members of the "uinput" group create virtual input devices.
+# GhostWhisper — let members of the "uinput" group create virtual input devices.
 #
 # A dedicated group on purpose: the "input" group can read every keyboard on
 # the machine, this one can only create virtual ones.
@@ -6,7 +6,7 @@
 # Install once:
 #   sudo groupadd -f uinput
 #   sudo usermod -aG uinput $USER
-#   sudo cp resources/70-ghostwriter-uinput.rules /etc/udev/rules.d/
+#   sudo cp resources/70-ghostwhisper-uinput.rules /etc/udev/rules.d/
 #   sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=uinput
 # then log out and back in so the panel session picks up the group.
 #
@@ -14,4 +14,4 @@
 #   sudo modprobe uinput
 #   echo uinput | sudo tee /etc/modules-load.d/uinput.conf
 
-KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+KERNEL=="uinput", SUBSYSTEM=="misc", MODE=="0660", GROUP="uinput", OPTIONS+="static_node=uinput"

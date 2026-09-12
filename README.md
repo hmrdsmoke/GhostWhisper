@@ -1,10 +1,10 @@
-# GhostWriter
+# GhostWhisper
 
 Local speech-to-text dictation for the COSMIC desktop.
 
 Press a hotkey, talk, press it again — the words get typed into whatever
 window has keyboard focus. Terminal, browser, editor, chat box, it doesn't
-matter: GhostWriter is a virtual keyboard, so every app just sees someone
+matter: GhostWhisper is a virtual keyboard, so every app just sees someone
 typing. Everything runs on your machine. No audio leaves it.
 
 ## How it works
@@ -21,7 +21,7 @@ Three pieces inside one COSMIC panel applet:
    keyboard on `/dev/uinput` and types the text into the focused window.
 
 A keyboard shortcut talks to the running applet over D-Bus
-(`ghostwriter --toggle`). That matters: a shortcut doesn't move keyboard
+(`ghostwhisper --toggle`). That matters: a shortcut doesn't move keyboard
 focus, so the text lands where your cursor already is.
 
 The first time it runs it asks — via a notification and the panel popup —
@@ -71,7 +71,7 @@ default. The bundled udev rule opens it to a dedicated `uinput` group:
 ```sh
 sudo groupadd -f uinput
 sudo usermod -aG uinput $USER
-sudo cp resources/70-ghostwriter-uinput.rules /etc/udev/rules.d/
+sudo cp resources/70-ghostwhisper-uinput.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=uinput
 ```
 
@@ -80,18 +80,18 @@ Then **log out and back in** so the panel session picks up the group.
 exist at all, the module isn't loaded: `sudo modprobe uinput` and
 `echo uinput | sudo tee /etc/modules-load.d/uinput.conf`.
 
-Without this GhostWriter still runs and says so in the panel popup;
+Without this GhostWhisper still runs and says so in the panel popup;
 transcriptions only go to the log until it's done.
 
 ### 2. Panel, model and hotkey
 
-- Settings → Desktop → Panel → Configure panel applets → add **GhostWriter**.
+- Settings → Desktop → Panel → Configure panel applets → add **GhostWhisper**.
 - Click the new icon. The popup shows which model the build wants and how
   big it is (1.6 GB for the large one, 150 MB for the small one), with a
   **Download** button. Press it; the popup shows progress and you get a
   notification when it's ready.
 - Settings → Keyboard → Shortcuts → Custom Shortcuts → add one running
-  `ghostwriter --toggle`, bound to whatever key you like.
+  `ghostwhisper --toggle`, bound to whatever key you like.
 
 ## Using it
 
@@ -114,13 +114,13 @@ typed into some other window minutes later. Clips with no speech in them
 Logs go to the session journal:
 
 ```sh
-journalctl --user -f | grep ghostwriter
+journalctl --user -f | grep ghostwhisper
 ```
 
 ### Config
 
-GhostWriter uses cosmic-config: one file per setting under
-`~/.config/cosmic/io.github.hmrdsmoke.GhostWriter/v1/`, in RON, so string
+GhostWhisper uses cosmic-config: one file per setting under
+`~/.config/cosmic/io.github.hmrdsmoke.GhostWhisper/v1/`, in RON, so string
 values keep their quotes. Changes apply live; if you switch to a model that
 isn't on disk, the popup offers to download it.
 
@@ -130,13 +130,13 @@ isn't on disk, the popup offers to download it.
 | `language` | `"en"` | Whisper language code, or `"auto"` to detect per dictation |
 
 ```sh
-mkdir -p ~/.config/cosmic/io.github.hmrdsmoke.GhostWriter/v1
-echo '"auto"' > ~/.config/cosmic/io.github.hmrdsmoke.GhostWriter/v1/language
+mkdir -p ~/.config/cosmic/io.github.hmrdsmoke.GhostWhisper/v1
+echo '"auto"' > ~/.config/cosmic/io.github.hmrdsmoke.GhostWhisper/v1/language
 ```
 
 ### Models
 
-Models live in `~/.local/share/ghostwriter/models/` and come from
+Models live in `~/.local/share/ghostwhisper/models/` and come from
 [ggerganov/whisper.cpp on Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main).
 Any file from there works as a `model` value — the quantized
 `ggml-large-v3-turbo-q5_0.bin` is the same model at a third of the VRAM,
@@ -151,9 +151,9 @@ useful on 4 GB cards.
 
 | Command | What it does |
 |---|---|
-| `ghostwriter` | Runs the applet (standalone it appears as a small window) |
-| `ghostwriter --toggle` | Starts or stops dictation in the running applet |
-| `ghostwriter --type "some words"` | Types the words after 3 seconds — tests the keyboard without Whisper |
+| `ghostwhisper` | Runs the applet (standalone it appears as a small window) |
+| `ghostwhisper --toggle` | Starts or stops dictation in the running applet |
+| `ghostwhisper --type "some words"` | Types the words after 3 seconds — tests the keyboard without Whisper |
 
 ## Limitations
 
@@ -173,7 +173,7 @@ variables change installation paths:
 ```sh
 just vendor
 just build-vendored
-just rootdir=debian/ghostwriter prefix=/usr install
+just rootdir=debian/ghostwhisper prefix=/usr install
 ```
 
 ## Translators

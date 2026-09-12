@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Ghostwriter
+Name=GhostWhisper
 Comment=Local speech-to-text dictation for the COSMIC desktop
 Type=Application
-Icon=io.github.hmrdsmoke.GhostWriter
-Exec=ghostwriter
+Icon=io.github.hmrdsmoke.GhostWhisper
+Exec=ghostwhisper
 Terminal=false
 StartupNotify=true
 Categories=COSMIC
