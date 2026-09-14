@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/main.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 mod app;

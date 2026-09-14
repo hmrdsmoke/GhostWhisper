@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/dbus.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! Session-bus endpoint so a keyboard shortcut can reach the running applet.

@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/model.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! Model files: where they live, which one this build defaults to, and

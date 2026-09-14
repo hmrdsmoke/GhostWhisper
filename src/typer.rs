@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/typer.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! Types text into whatever window has keyboard focus, by way of a virtual

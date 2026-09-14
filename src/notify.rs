@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/notify.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! Desktop notifications, sent from their own thread so nothing waits on D-Bus.

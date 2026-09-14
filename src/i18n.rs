@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/i18n.rs
 // SPDX-License-Identifier: GPL-3.0
 
 //! Provides localization support for this crate.

@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// GhostWhisper/src/app.rs
 // SPDX-License-Identifier: GPL-3.0-only
 
 use crate::audio::{Recorder, WHISPER_RATE};
