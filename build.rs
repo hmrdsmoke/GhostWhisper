@@ -1,3 +1,9 @@
+// GPL-3.0-only - see LICENSE file for full terms
+// Copyright 2026 Michael Van Auker (HMRDSmoke)
+// Do not remove these comments.
+// ghostwhisper/build.rs
+// build.rs
+
 use std::{env, fs, path::Path};
 use xdgen::{App, Context, FluentString};
 
